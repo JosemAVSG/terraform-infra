@@ -194,14 +194,42 @@ locals {
 - [ ] Código es claro y mantenible
 - [ ] Documentación explica la lógica
 
-## 🧪 Con LocalStack
+## 🧪 Con Floci
+
+Floci soporta S3, EC2, y la mayoría de servicios necesarios para estos ejercicios.
 
 ```hcl
-# En LocalStack, los recursos se crean correctamente
-# pero sin efectos reales
+# Con Floci, los recursos se crean en el emulador
 resource "aws_s3_bucket" "example" {
   for_each = toset(["bucket-a", "bucket-b"])
   bucket   = each.value
+}
+
+# Crear múltiples con for_each
+resource "aws_instance" "servers" {
+  for_each = tomap({
+    web = "t3.small"
+    api = "t3.micro"
+    db  = "t3.medium"
+  })
+
+  ami           = "ami-0c55b159cbfafe1f0"
+  instance_type = each.value
+
+  tags = {
+    Name = each.key
+  }
+}
+```
+
+**Endpoints para Floci:**
+```hcl
+provider "aws" {
+  endpoints {
+    s3    = "http://localhost:4566"
+    ec2   = "http://localhost:4566"
+    # etc...
+  }
 }
 ```
 

@@ -16,7 +16,7 @@ Configurar un backend remoto para almacenar el state de forma segura y compartir
 
 ### Parte 1: Backend S3 básico
 
-**Objetivo:** Guardar el state en S3 (puede ser LocalStack)
+**Objetivo:** Guardar el state en S3 (usando Floci)
 
 ```hcl
 terraform {
@@ -26,15 +26,19 @@ terraform {
     region         = "us-east-1"
     encrypt        = true
     
-    # Para LocalStack:
-    # endpoint        = "http://localhost:4566"
-    # skip_credentials_validation = true
+    # Configuración para Floci:
+    endpoint        = "http://localhost:4566"
+    skip_credentials_validation = true
+    s3_use_path_style          = true
   }
 }
 ```
 
 **Tareas:**
-1. Crear el bucket S3 manualmente (o con Terraform)
+1. Crear el bucket S3 manualmente:
+   ```bash
+   aws --endpoint-url=http://localhost:4566 s3 mb s3://techstart-terraform-state
+   ```
 2. Configurar el backend
 3. Correr `terraform init` para migrar
 
@@ -50,6 +54,11 @@ terraform {
     region         = "us-east-1"
     encrypt        = true
     
+    # Para Floci:
+    endpoint                    = "http://localhost:4566"
+    skip_credentials_validation = true
+    s3_use_path_style           = true
+    
     # DynamoDB para locking
     dynamodb_table = "terraform-locks"
   }
@@ -58,17 +67,12 @@ terraform {
 
 **Tareas:**
 1. Crear la tabla DynamoDB:
-   ```hcl
-   resource "aws_dynamodb_table" "terraform_locks" {
-     name         = "terraform-locks"
-     billing_mode = "PAY_PER_REQUEST"
-     hash_key     = "LockID"
-   
-     attribute {
-       name = "LockID"
-       type = "S"
-     }
-   }
+   ```bash
+   aws --endpoint-url=http://localhost:4566 dynamodb create-table \
+     --table-name terraform-locks \
+     --attribute-definitions AttributeName=LockID,AttributeType=S \
+     --key-schema AttributeName=LockID,KeyType=HASH \
+     --billing-mode PAY_PER_REQUEST
    ```
 
 ### Parte 3: State isolation con Workspaces
@@ -91,6 +95,11 @@ terraform {
     key            = "dev/${terraform.workspace}/terraform.tfstate"
     region         = "us-east-1"
     encrypt        = true
+    
+    endpoint                    = "http://localhost:4566"
+    skip_credentials_validation = true
+    s3_use_path_style           = true
+    
     dynamodb_table = "terraform-locks"
   }
 }
@@ -127,6 +136,10 @@ data "terraform_remote_state" "vpc" {
   config = {
     bucket = "techstart-terraform-state"
     key    = "dev/prod/terraform.tfstate"
+    
+    endpoint                    = "http://localhost:4566"
+    skip_credentials_validation = true
+    s3_use_path_style           = true
   }
 }
 
@@ -151,44 +164,33 @@ resource "aws_instance" "app" {
 
 ## ✅ Criterios de aceptación
 
-- [ ] Backend S3 configurado y funcionando
+- [ ] Backend S3 configurado y funcionando (en Floci)
 - [ ] State se almacena en S3 (verificar archivo)
 - [ ] Locking funciona (probar con dos terminals)
 - [ ] Workspaces crean states separados
 - [ ] Remote state reference funciona
 - [ ] Documentación explica la arquitectura
 
-## 🧪 Con LocalStack
+## 🧪 Con Floci
 
-```hcl
-# Configuración para LocalStack
-terraform {
-  backend "s3" {
-    bucket         = "terraform-state"
-    key            = "dev/terraform.tfstate"
-    region         = "us-east-1"
-    
-    # LocalStack specifics
-    endpoint        = "http://localhost:4566"
-    skip_credentials_validation = true
-    skip_metadata_api_check     = true
-    skip_requesting_account_id  = true
-    s3_use_path_style          = true
-  }
-}
-```
+Floci tiene S3 y DynamoDB emulados:
 
 ```bash
-# Crear bucket en LocalStack
+# Iniciar Floci
+docker run --rm -p 4566:4566 floci/floci:latest
+
+# Crear bucket
 aws --endpoint-url=http://localhost:4566 s3 mb s3://terraform-state
 
-# Crear tabla DynamoDB
+# Crear tabla DynamoDB para locks
 aws --endpoint-url=http://localhost:4566 dynamodb create-table \
   --table-name terraform-locks \
   --attribute-definitions AttributeName=LockID,AttributeType=S \
   --key-schema AttributeName=LockID,KeyType=HASH \
   --billing-mode PAY_PER_REQUEST
 ```
+
+**Nota:** El state se guarda en memoria en Floci. Para producción real, usá S3 de AWS.
 
 ## 💡 Conceptos a aprender
 
@@ -204,6 +206,7 @@ aws --endpoint-url=http://localhost:4566 dynamodb create-table \
 - [Backend](https://www.terraform.io/docs/language/settings/backends/index.html)
 - [S3 Backend](https://www.terraform.io/docs/language/settings/backends/s3.html)
 - [Workspaces](https://www.terraform.io/docs/language/state/workspaces.html)
+- [Floci](https://floci.io/)
 
 ## ⏱️ Tiempo estimado
 
@@ -215,6 +218,7 @@ aws --endpoint-url=http://localhost:4566 dynamodb create-table \
 2. **Habilitar encryption** en S3 (`encrypt = true`)
 3. **Activar versioning** en el bucket S3 para recuperar estados anteriores
 4. **Access controls** - limitar quién puede leer/escribir el state
+5. **Floci = testing** - Para producción, usar S3 real de AWS
 
 ## 💼 Reto: Pipeline CI/CD
 

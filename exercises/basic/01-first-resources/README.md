@@ -48,21 +48,30 @@ Crear una instancia EC2 que simule un servidor de desarrollo. El equipo de devs 
 - [ ] `terraform validate` pasa
 - [ ] `terraform plan` muestra los cambios esperados
 
-## 🧪 Con LocalStack
+## 🧪 Con Floci (emulador local)
+
+Floci es más rápido y liviano que LocalStack, y tiene más servicios reales.
+
+```bash
+# Iniciar Floci
+docker run --rm -p 4566:4566 floci/floci:latest
+```
 
 ```hcl
 provider "aws" {
   region                      = "us-east-1"
   access_key                  = "test"
   secret_key                  = "test"
-  s3_use_path_style           = true
   skip_credentials_validation = true
+  skip_requesting_account_id  = true
 
   endpoints {
     ec2 = "http://localhost:4566"
   }
 }
 ```
+
+**Nota:** Floci emula EC2 a nivel de API, pero los recursos no se crean realmente en Docker. Para testing de integración real, usa AWS real o considera que algunos servicios tienen limitaciones.
 
 ## 💡 Conceptos a aprender
 
@@ -75,6 +84,7 @@ provider "aws" {
 ## 🔗 Recursos
 
 - [aws_instance](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/instance)
+- [Floci](https://floci.io/)
 - [AWS Free Tier](https://aws.amazon.com/free/)
 
 ## ⏱️ Tiempo estimado

@@ -5,7 +5,7 @@ Ejercicios para aprender los fundamentos de Terraform.
 ## 🏢 Contexto
 
 **Empresa:** TechStart SA  
-**Situación:** Empresa pequeña começando a adoptar Infrastructure as Code.
+**Situación:** Empresa pequeña empezando a adoptar Infrastructure as Code.
 
 ---
 
@@ -22,7 +22,7 @@ Ejercicios para aprender los fundamentos de Terraform.
 ## Lo que aprenderás
 
 - ✅ Provider configuration
-- ✅ Resources básicos (EC2, etc.)
+- ✅ Resources básicos (EC2, etc)
 - ✅ Variables y outputs
 - ✅ tfvars para configuración
 - ✅ Data Sources para consultar info dinámica
@@ -32,28 +32,36 @@ Ejercicios para aprender los fundamentos de Terraform.
 ## Requisitos
 
 - Terraform >= 1.6
-- AWS CLI configurado O LocalStack
+- AWS CLI configurado O **Floci** (emulador local)
 
-## 💡 Con LocalStack
+## 💡 Con Floci (recomendado)
 
-Podés usar LocalStack para todos estos ejercicios:
+Floci es el emulador local recomendado: más rápido, liviano, y MIT licensed.
 
 ```bash
-# Iniciar LocalStack
-docker run -d -p 4566:4566 localstack/localstack
+# Iniciar Floci
+docker run --rm -p 4566:4566 floci/floci:latest
+```
 
-# Configurar provider
+```hcl
 provider "aws" {
   region                      = "us-east-1"
   access_key                  = "test"
   secret_key                  = "test"
   skip_credentials_validation = true
-  
+
   endpoints {
     ec2 = "http://localhost:4566"
   }
 }
 ```
+
+**Ventajas de Floci vs LocalStack:**
+- ✅ Sin auth token requerido
+- ✅ 24ms startup vs 3.3s
+- ✅ 13MB memoria vs 143MB
+- ✅ MIT licensed (nunca se va a cerrar)
+- ✅ Servicios reales (Lambda, RDS, Redis en Docker)
 
 ---
 

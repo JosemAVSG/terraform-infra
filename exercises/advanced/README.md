@@ -34,15 +34,26 @@ Proyectos completos que integran múltiples conceptos para arquitecturas de prod
 
 - Completar niveles básico e intermedio
 - Go >= 1.18 (para Terratest)
-- AWS CLI configurado (no funciona con LocalStack)
+- Floci para testing local (no requiere AWS real)
 
-## 💡 Aplicación real
+## 💡 Flujo recomendado
 
-Estos ejercicios te preparan para:
-- Trabajar en equipos de infraestructura
-- Manejar arquitecturas complejas
-- Implementar CI/CD para infraestructura
-- Hacer code review de Terraform
+```
+┌─────────────────────────────────────────────────────────────┐
+│  DESARROLLO LOCAL (Floci)                                   │
+│  - Ejercicios 1-8 con Floci                                │
+│  - No necesitas cuenta de AWS                              │
+│  - Todo corre en tu máquina                                │
+└─────────────────────────────────────────────────────────────┘
+                            │
+                            ▼
+┌─────────────────────────────────────────────────────────────┐
+│  TESTING REAL (AWS real)                                   │
+│  - Ejercicio 9 (Terratest)                                 │
+│  - Requiere cuenta AWS real                                │
+│  - Crea y destruye recursos reales                         │
+└─────────────────────────────────────────────────────────────┘
+```
 
 ## 🎯 Objetivo del nivel
 
@@ -60,3 +71,24 @@ El ejercicio **08-complete-architecture** es el proyecto final: una arquitectura
 - Módulos organizados
 
 Es el equivalente a lo que vas a usar en un trabajo real.
+
+---
+
+## 🧪 Con Floci
+
+Floci soporta los servicios necesarios para los ejercicios avanzados:
+
+```bash
+docker run --rm -p 4566:4566 floci/floci:latest
+```
+
+| Servicio | Soportado | Notas |
+|----------|-----------|-------|
+| VPC | ✅ | Subnets, Route Tables, IGW |
+| EC2 | ✅ | Instancias, Security Groups |
+| ALB | ✅ | Load Balancers, Target Groups |
+| ASG | ✅ | Launch Templates, ASG |
+| RDS | ✅ | PostgreSQL/MySQL reales en Docker |
+| Lambda | ✅ | Funciones reales en Docker |
+| S3 | ✅ | Buckets, versioning |
+| DynamoDB | ✅ | Tablas, streams |

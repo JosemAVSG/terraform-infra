@@ -23,7 +23,7 @@ Ejercicios para crear código más robusto, reutilizable y preparado para equipo
 
 - ✅ Módulos propios (child modules)
 - ✅ for_each, count, expressions
-- ✅ Terraform functions (lookup, merge, etc.)
+- ✅ Terraform functions (lookup, merge, etc)
 - ✅ Remote backends (S3)
 - ✅ State locking (DynamoDB)
 - ✅ Workspaces basics
@@ -33,15 +33,22 @@ Ejercicios para crear código más robusto, reutilizable y preparado para equipo
 ## Requisitos
 
 - Completar nivel básico
-- AWS CLI o LocalStack
-- (Para ejercicio 6) Bucket S3 o LocalStack
+- AWS CLI o **Floci**
 
-## 💡 Aplicación real
+## 💡 Con Floci
 
-Estos patrones se usan en proyectos reales:
-- **Módulos** → Componentes reutilizables en toda la empresa
-- **Conditionals** → Infrastructure as Code dinámico
-- **Remote state** → Equipos de +3 personas trabajando juntos
+Todos estos ejercicios funcionan con Floci:
+
+```bash
+docker run --rm -p 4566:4566 floci/floci:latest
+```
+
+Floci soporta:
+- ✅ S3 (backend de state)
+- ✅ DynamoDB (state locking)
+- ✅ VPC, EC2, Security Groups
+- ✅ Lambdas (reales en Docker!)
+- ✅ RDS (PostgreSQL/MySQL reales!)
 
 ---
 

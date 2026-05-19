@@ -3,7 +3,7 @@
 ## 🏢 Contexto empresarial
 
 **Empresa:** TechStart SA  
-**Problema:** "No sabemos qué AMI usar. Мы necesitamos la AMI más reciente de Amazon Linux 2, pero no queremos hardcodear el ID porque cambia con las actualizaciones."
+**Problema:** "No sabemos qué AMI usar. Necesitamos la AMI más reciente de Amazon Linux 2, pero no queremos hardcodear el ID porque cambia con las actualizaciones."
 
 ## 🎯 Objetivo
 
@@ -91,12 +91,9 @@ output "available_azs" {
 - [ ] No hay hardcoded AMI IDs
 - [ ] El código es idempotente (puede correrse múltiples veces)
 
-## 🧪 Con LocalStack
+## 🧪 Con Floci
 
-LocalStack soporta:
-- `aws_ami` - ✅
-- `aws_region` - ✅
-- `aws_availability_zones` - ✅
+Floci soporta los data sources básicos:
 
 ```hcl
 data "aws_ami" "amazon_linux" {
@@ -108,8 +105,15 @@ data "aws_ami" "amazon_linux" {
     values = ["amzn2-ami-hvm-*-x86_64-gp2"]
   }
 }
-# En LocalStack, esto devolverá una AMI mock
+
+data "aws_region" "current" {}
+
+data "aws_availability_zones" "available" {
+  state = "available"
+}
 ```
+
+**Nota:** En Floci, los data sources devuelven valores mock/emuados. Para producción, vas a obtener datos reales de AWS.
 
 ## 💡 Conceptos a aprender
 

@@ -65,6 +65,58 @@ terraform-infra/
 
 ---
 
+## 🧪 Cómo practicar (sin cuenta AWS)
+
+### Opción 1: Floci (RECOMENDADO)
+
+Floci es un emulador local de AWS, más rápido y liviano que LocalStack.
+
+```bash
+# Iniciar Floci
+docker run --rm -p 4566:4566 floci/floci:latest
+```
+
+**Ventajas:**
+- ✅ Sin account/auth requerido
+- ✅ 24ms startup (vs 3.3s LocalStack)
+- ✅ 13MB RAM (vs 143MB LocalStack)
+- ✅ MIT License (nunca se cierra)
+- ✅ Lambda/RDS/Redis reales en Docker
+
+**En Terraform:**
+```hcl
+provider "aws" {
+  region                      = "us-east-1"
+  access_key                  = "test"
+  secret_key                  = "test"
+  skip_credentials_validation = true
+
+  endpoints {
+    ec2     = "http://localhost:4566"
+    s3      = "http://localhost:4566"
+    lambda  = "http://localhost:4566"
+    rds     = "http://localhost:4566"
+    # etc...
+  }
+}
+```
+
+### Opción 2: AWS real
+
+Si tenés cuenta de AWS, pueden usar las credenciales reales:
+
+```bash
+aws configure
+```
+
+```hcl
+provider "aws" {
+  region = "us-east-1"
+}
+```
+
+---
+
 ## 🚀 Cómo usar este repositorio
 
 1. **Para cada ejercicio:**
@@ -73,8 +125,8 @@ terraform-infra/
    - Ejecuta `terraform init` → `terraform validate` → `terraform plan`
 
 2. **Orden recomendado:**
-   - Empieza por nivel básico (ejercicio 1)
-   - Completa los 3 ejercicios básicos antes de avanzar
+   - Empezá por nivel básico (ejercicio 1)
+   - Completá los 3 ejercicios básicos antes de avanzar
    - Los ejercicios dependen del conocimiento previo
 
 3. **Desafíos:**
@@ -86,12 +138,13 @@ terraform-infra/
 ## 🛠️ Requisitos previos
 
 - **Terraform** >= 1.6.0
-- **AWS CLI** (o GCP/Azure CLI según ejercicio)
+- **Docker** (para Floci)
 - **Git** instalado
 - **Editor** con soporte Terraform (VS Code + HashiCorp Terraform)
 
 ### Para nivel avanzado (Terratest):
 - **Go** >= 1.18
+- **AWS CLI** configurado (no funciona con emuladores)
 
 ---
 
@@ -141,9 +194,10 @@ terraform workspace list
 
 ## 📚 Recursos adicionales
 
-- [Documentación oficial de Terraform](https://www.terraform.io/docs)
+- [Terraform Docs](https://www.terraform.io/docs)
 - [Terraform Registry](https://registry.terraform.io/)
-- [AWS Provider docs](https://registry.terraform.io/providers/hashicorp/aws/latest/docs)
+- [AWS Provider](https://registry.terraform.io/providers/hashicorp/aws/latest/docs)
+- [Floci - AWS Emulator](https://floci.io/)
 - [Terratest](https://terratest.gruntwork.io/)
 
 ---
