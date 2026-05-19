@@ -1,28 +1,139 @@
-# 🟢 Ejercicio 3: Data Sources
+# 🟢 Ejercicio 3: Consultando la Infraestructura Existente
 
-## Objetivo
-Aprender a usar Data Sources para obtener información existente en lugar de crear recursos desde cero.
+## 🏢 Contexto empresarial
 
-## Tarea
-1. Usa `data "aws_ami" "amazon_linux"` para encontrar:
-   - AMI más reciente de Amazon Linux 2
-   - Filtrar por owner: "amazon"
-   - Filtrar por nombre que contenga "amzn2-ami-hvm-*-x86_64-gp2"
+**Empresa:** TechStart SA  
+**Problema:** "No sabemos qué AMI usar. Мы necesitamos la AMI más reciente de Amazon Linux 2, pero no queremos hardcodear el ID porque cambia con las actualizaciones."
 
-2. Usa `data "aws_region" "current"` para obtener la región actual
+## 🎯 Objetivo
 
-3. Usa `data "aws_availability_zones" "available"` para listar AZs disponibles
+Usar Data Sources para obtener información dinámica de AWS en lugar de hardcodear valores.
 
-4. Crea una instancia usando los datos obtenidos
+## 📋 Tu tarea
 
-## Archivos esperados
-- `main.tf` - Data sources y recurso
+### Parte 1: Buscar AMI automáticamente
 
-## Conceptos clave
-- Diferencia entre resource y data source
-- Filtrado con filtros y nombre
-- Atributos: `.id`, `.name`, `.names`, etc.
-- Data source de Terraform
+Usa `data "aws_ami" "amazon_linux"` para encontrar la AMI más reciente:
 
-## Reto extra
-Usa el output para mostrar el nombre de la AMI y las AZs disponibles
+```hcl
+data "aws_ami" "amazon_linux" {
+  most_recent = true
+  owners      = ["amazon"]
+
+  filter {
+    name   = "name"
+    values = ["amzn2-ami-hvm-*-x86_64-gp2"]
+  }
+}
+```
+
+### Parte 2: Obtener región actual
+
+```hcl
+data "aws_region" "current" {
+  name = var.aws_region  # optional, defaults to current
+}
+```
+
+### Parte 3: Listar Availability Zones
+
+```hcl
+data "aws_availability_zones" "available" {
+  state = "available"
+}
+```
+
+### Parte 4: Usar los datos
+
+Crea la instancia usando los datos obtenidos:
+
+```hcl
+resource "aws_instance" "app" {
+  ami           = data.aws_ami.amazon_linux.id
+  instance_type = var.instance_type
+  # ... rest of config
+}
+```
+
+### Parte 5: Mostrar información útil
+
+```hcl
+output "ami_info" {
+  description = "Información de la AMI seleccionada"
+  value = {
+    id       = data.aws_ami.amazon_linux.id
+    name     = data.aws_ami.amazon_linux.name
+    owner    = data.aws_ami.amazon_linux.owner_id
+  }
+}
+
+output "available_azs" {
+  description = "Zonas de disponibilidad"
+  value       = data.aws_availability_zones.available.names
+}
+```
+
+## 🎨 Archivos esperados
+
+```
+03-data-sources/
+├── main.tf          # Data sources + resource
+├── variables.tf
+├── outputs.tf
+└── versions.tf
+```
+
+## ✅ Criterios de aceptación
+
+- [ ] Data source de AMI encuentra la más reciente
+- [ ] Filtros son específicos para evitar AMI incorrectas
+- [ ] Outputs muestran información relevante
+- [ ] No hay hardcoded AMI IDs
+- [ ] El código es idempotente (puede correrse múltiples veces)
+
+## 🧪 Con LocalStack
+
+LocalStack soporta:
+- `aws_ami` - ✅
+- `aws_region` - ✅
+- `aws_availability_zones` - ✅
+
+```hcl
+data "aws_ami" "amazon_linux" {
+  most_recent = true
+  owners      = ["amazon"]
+
+  filter {
+    name   = "name"
+    values = ["amzn2-ami-hvm-*-x86_64-gp2"]
+  }
+}
+# En LocalStack, esto devolverá una AMI mock
+```
+
+## 💡 Conceptos a aprender
+
+- Diferencia `resource` vs `data`
+- Data sources son de solo lectura
+- Filtering avanzado
+- Atributos: `.id`, `.name`, `.owner_id`, `.names`
+- Dependencias implícitas
+
+## 🔗 Recursos
+
+- [aws_ami](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/ami)
+- [aws_region](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/region)
+- [aws_availability_zones](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/availability_zones)
+
+## ⏱️ Tiempo estimado
+
+30-45 minutos
+
+## 💼 Bonus: Escenario real
+
+El equipo de seguridad quiere que solo uses AMIs que:
+1. Sean de AWS (no community)
+2. Tengan el tag `support_level = "standard"`
+3. Sean de los últimos 90 días
+
+Agrega estos filtros al data source.

@@ -1,43 +1,232 @@
-# 🟡 Ejercicio 5: Conditionals y Loops
+# 🟡 Ejercicio 5: Infraestructura Dinámica
 
-## Objetivo
+## 🏢 Contexto empresarial
+
+**Empresa:** TechStart SA  
+**Situación:** 
+- "En producción necesitamos IP pública, en dev no"
+- "Necesitamos crear múltiples buckets S3 para diferentes equipos"
+- "Queremos configurar diferentes reglas de seguridad según el ambiente"
+
+## 🎯 Objetivo
+
 Dominar la creación dinámica de recursos usando expresiones de Terraform.
 
-## Tarea
+## 📋 Tu tarea
 
-### Parte 1: Conditional
-1. Crea una variable `enable_public_ip = true`
-2. Usa un conditional para decidir si crear o no una IP elástica:
-   ```hcl
-   resource "aws_eip" "example" {
-     count = var.enable_public_ip ? 1 : 0
-   }
-   ```
+### Parte 1: Condicionales
 
-### Parte 2: for_each y for
-1. Crea una lista de objetos para múltiples instancias:
-   ```hcl
-   instances = [
-     { name = "web", type = "t2.micro" },
-     { name = "app", type = "t3.small" },
-     { name = "db",  type = "t3.medium" }
-   ]
-   ```
-2. Usa `for_each` para crear instancias desde esa lista
+**Escenario:** Crear o no recursos según configuración
 
-### Parte 3: Expresiones for
-1. Crea un map de tags desde una lista
-2. Usa `lookup` para obtener valores de maps
+```hcl
+variable "enable_public_ip" {
+  description = "Si true, asigna IP pública a la instancia"
+  type        = bool
+  default     = false
+}
 
-## Archivos esperados
-- `main.tf` - Recursos con expresiones
-- `variables.tf` - Definiciones
+variable "environment" {
+  description = "dev, staging, o prod"
+  type        = string
+  default     = "dev"
+}
+```
 
-## Conceptos clave
-- `condition ? true_value : false_value`
-- `for_each = toset()` o `for_each = tomap()`
-- `for key, value in list : key => value`
-- `length()`, `keys()`, `values()`
+Usar conditional para:
+1. Asignar IP pública solo si `enable_public_ip = true`
+2. Crear EIP solo en producción
+3. Configurar diferentes sizes según environment
 
-## Reto
-Crear 3 buckets S3 con diferentes configuraciones basado en un map de configuración
+```hcl
+# IP pública condicional
+resource "aws_instance" "app" {
+  # ... other config
+  
+  associate_public_ip_address = var.enable_public_ip
+}
+
+# EIP condicional
+resource "aws_eip" "prod_ip" {
+  count = var.environment == "prod" ? 1 : 0
+  
+  instance = aws_instance.app.id
+}
+```
+
+### Parte 2: for_each - Múltiples recursos
+
+**Escenario:** Crear múltiples buckets S3 con configuración variable
+
+```hcl
+variable "buckets" {
+  description = "Mapa de configuración de buckets"
+  type = map(object({
+    versioning  = bool
+    lifecycle_rule = bool
+    tags        = map(string)
+  }))
+
+  default = {
+    "techstart-assets" = {
+      versioning  = true
+      lifecycle_rule = true
+      tags = { team = "frontend" }
+    }
+    "techstart-logs" = {
+      versioning  = true
+      lifecycle_rule = true
+      tags = { team = "devops" }
+    }
+    "techstart-backups" = {
+      versioning  = false
+      lifecycle_rule = false
+      tags = { team = "dba" }
+    }
+  }
+}
+```
+
+Crear los buckets:
+
+```hcl
+resource "aws_s3_bucket" "app" {
+  for_each = var.buckets
+
+  bucket = each.key
+
+  tags = each.value.tags
+}
+
+resource "aws_s3_bucket_versioning" "app" {
+  for_each = { for k, v in var.buckets : k => v if v.versioning }
+  
+  bucket = each.key
+  
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+```
+
+### Parte 3: for - Transformaciones
+
+**Escenario:** Generar tags desde una lista
+
+```hcl
+variable "tags_list" {
+  type    = list(string)
+  default = ["env", "team", "project"]
+}
+
+# Crear map de tags
+locals {
+  tags = { for tag in var.tags_list : tag => var.environment }
+  # Result: { "env" = "prod", "team" = "prod", "project" = "prod" }
+}
+```
+
+**Escenario:** Filtrar y transformar
+
+```hcl
+variable "instances" {
+  type = list(object({
+    name = string
+    type = string
+    env  = string
+  }))
+
+  default = [
+    { name = "web-1", type = "t3.small", env = "prod" },
+    { name = "web-2", type = "t3.small", env = "prod" },
+    { name = "dev-1", type = "t2.micro", env = "dev" },
+  ]
+}
+
+# Solo instancias de prod
+locals {
+  prod_instances = [for i in var.instances : i if i.env == "prod"]
+}
+```
+
+### Parte 4: Funciones útiles
+
+```hcl
+# lookup - valores por defecto
+locals {
+  default_type = lookup(var.config, "instance_type", "t3.micro")
+}
+
+# coalesce - primer valor no nulo
+locals {
+  env = coalesce(var.environment, "dev", "default")
+}
+
+# merge - combinar maps
+locals {
+  common_tags = { ManagedBy = "terraform", Project = "techstart" }
+  env_tags    = { Environment = var.environment }
+  all_tags    = merge(common_tags, env_tags)
+}
+
+# length, keys, values
+locals {
+  bucket_count = length(var.buckets)
+  bucket_names = keys(var.buckets)
+}
+```
+
+## 🎨 Archivos esperados
+
+```
+05-conditionals-loops/
+├── main.tf
+├── variables.tf
+├── outputs.tf
+└── README.md  # Documentar decisiones
+```
+
+## ✅ Criterios de aceptación
+
+- [ ] Conditional funciona: `var.condition ? a : b`
+- [ ] for_each crea múltiples recursos correctamente
+- [ ] for transforma listas/maps según necesidad
+- [ ] Funciones (lookup, coalesce, merge) usadas correctamente
+- [ ] Código es claro y mantenible
+- [ ] Documentación explica la lógica
+
+## 🧪 Con LocalStack
+
+```hcl
+# En LocalStack, los recursos se crean correctamente
+# pero sin efectos reales
+resource "aws_s3_bucket" "example" {
+  for_each = toset(["bucket-a", "bucket-b"])
+  bucket   = each.value
+}
+```
+
+## 💡 Conceptos a aprender
+
+- `count` y `for_each` - cuándo usar cada uno
+- Expresiones ternarias
+- `tomap()`, `tolist()`, `toset()`
+- Built-in functions
+- Metaprogramming en Terraform
+
+## 🔗 Recursos
+
+- [Expressions](https://www.terraform.io/docs/language/expressions/index.html)
+- [Functions](https://www.terraform.io/docs/language/functions/index.html)
+- [Count & For Each](https://www.terraform.io/docs/language/meta-arguments/count.html)
+
+## ⏱️ Tiempo estimado
+
+60-90 minutos
+
+## 💼 Reto final
+
+Crea una configuración que:
+1. Use un map de 5 instancias con diferentes configs
+2. Cree un security group por instancia
+3. Solo las instancias en subnets públicas tengan EIP
+4. Use una función para validar que el tipo de instancia exista
