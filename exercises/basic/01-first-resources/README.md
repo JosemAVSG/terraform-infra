@@ -71,7 +71,7 @@ provider "aws" {
 }
 ```
 
-**Nota:** Floci emula EC2 a nivel de API, pero los recursos no se crean realmente en Docker. Para testing de integración real, usa AWS real o considera que algunos servicios tienen limitaciones.
+**Nota:** Floci emula EC2 a nivel de API, Para testing de integración real, usa AWS real o considera que algunos servicios tienen limitaciones.
 
 ## 💡 Conceptos a aprender
 
